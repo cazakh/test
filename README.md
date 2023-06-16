@@ -202,7 +202,7 @@ void print(const std::string& text, std::ofstream& out)
 Содержимое файла `log.txt`:
 
 ```
-hello world!
+*Пустой файл
 ```
 
 ### CMakeLists
@@ -433,11 +433,12 @@ logger          latest    7983cec6dd3a   3 minutes ago   388MB
 ```
 Последня команда требует ввести текст, который запишется в наш `log.txt` (она ничего не выводит)
 
+Мы ввели `sokol`
+
 ```
 $ sudo docker inspect logger
 $ cat logs/log.txt
 ```
 ```
 sokol
-
 ```
