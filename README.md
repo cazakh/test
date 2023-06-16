@@ -183,7 +183,7 @@ $ git add Linux.yml
 $ git commit -m "linux"
 $ git push origin master
 ```
-Вводим логин и токен
+`Вводим логин и токен`
 
 ## Part 2
 
@@ -222,6 +222,6 @@ $ git add Windows.yml
 $ git commit -m "windows"
 $ git push origin master
 ```
-Вводим логин и токен
+`Вводим логин и токен`
 
 Далее переходим в раздел Actions и видим, что все сценарии отработали корректно
