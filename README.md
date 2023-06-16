@@ -1,143 +1,142 @@
-## Laboratory work VI
+## Laboratory work VIII
 
-Данная лабораторная работа посвещена изучению средств пакетирования на примере **CPack**
+Данная лабораторная работа посвещена изучению систем автоматизации развёртывания и управления приложениями на примере **Docker**
 
 ```sh
-$ open https://cmake.org/Wiki/CMake:CPackPackageGenerators
+$ open https://docs.docker.com/get-started/
 ```
 
 ## Tasks
 
-- [ ] 1. Создать публичный репозиторий с названием **lab06** на сервисе **GitHub**
-- [ ] 2. Выполнить инструкцию учебного материала
-- [ ] 3. Ознакомиться со ссылками учебного материала
+- [ ] 1. Создать публичный репозиторий с названием **lab08** на сервисе **GitHub**
+- [ ] 2. Ознакомиться со ссылками учебного материала
+- [ ] 3. Выполнить инструкцию учебного материала
 - [ ] 4. Составить отчет и отправить ссылку личным сообщением в **Slack**
 
 ## Tutorial
 
 ```sh
 $ export GITHUB_USERNAME=<имя_пользователя>
-$ export GITHUB_EMAIL=<адрес_почтового_ящика>
-$ alias edit=<nano|vi|vim|subl>
-$ alias gsed=sed # for *-nix system
 ```
 
-```sh
+```
 $ cd ${GITHUB_USERNAME}/workspace
 $ pushd .
 $ source scripts/activate
 ```
 
 ```sh
-$ git clone https://github.com/${GITHUB_USERNAME}/lab05 projects/lab06
-$ cd projects/lab06
+$ git clone https://github.com/${GITHUB_USERNAME}/lab07 lab08
+$ cd lab08
+$ git submodule update --init
 $ git remote remove origin
-$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab06
+$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab08
 ```
 
 ```sh
-$ gsed -i '/project(print)/a\
-set(PRINT_VERSION_STRING "v\${PRINT_VERSION}")
-' CMakeLists.txt
-$ gsed -i '/project(print)/a\
-set(PRINT_VERSION\
-  \${PRINT_VERSION_MAJOR}.\${PRINT_VERSION_MINOR}.\${PRINT_VERSION_PATCH}.\${PRINT_VERSION_TWEAK})
-' CMakeLists.txt
-$ gsed -i '/project(print)/a\
-set(PRINT_VERSION_TWEAK 0)
-' CMakeLists.txt
-$ gsed -i '/project(print)/a\
-set(PRINT_VERSION_PATCH 0)
-' CMakeLists.txt
-$ gsed -i '/project(print)/a\
-set(PRINT_VERSION_MINOR 1)
-' CMakeLists.txt
-$ gsed -i '/project(print)/a\
-set(PRINT_VERSION_MAJOR 0)
-' CMakeLists.txt
-$ git diff
-```
-
-```sh
-$ touch DESCRIPTION && edit DESCRIPTION
-$ touch ChangeLog.md
-$ export DATE="`LANG=en_US date +'%a %b %d %Y'`"
-$ cat > ChangeLog.md <<EOF
-* ${DATE} ${GITHUB_USERNAME} <${GITHUB_EMAIL}> 0.1.0.0
-- Initial RPM release
+$ cat > Dockerfile <<EOF
+FROM ubuntu:18.04
 EOF
 ```
 
 ```sh
-$ cat > CPackConfig.cmake <<EOF
-include(InstallRequiredSystemLibraries)
+$ cat >> Dockerfile <<EOF
+
+RUN apt update
+RUN apt install -yy gcc g++ cmake
 EOF
 ```
 
 ```sh
-$ cat >> CPackConfig.cmake <<EOF
-set(CPACK_PACKAGE_CONTACT ${GITHUB_EMAIL})
-set(CPACK_PACKAGE_VERSION_MAJOR \${PRINT_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR \${PRINT_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH \${PRINT_VERSION_PATCH})
-set(CPACK_PACKAGE_VERSION_TWEAK \${PRINT_VERSION_TWEAK})
-set(CPACK_PACKAGE_VERSION \${PRINT_VERSION})
-set(CPACK_PACKAGE_DESCRIPTION_FILE \${CMAKE_CURRENT_SOURCE_DIR}/DESCRIPTION)
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "static C++ library for printing")
+$ cat >> Dockerfile <<EOF
+
+COPY . print/
+WORKDIR print
 EOF
 ```
 
 ```sh
-$ cat >> CPackConfig.cmake <<EOF
+$ cat >> Dockerfile <<EOF
 
-set(CPACK_RESOURCE_FILE_LICENSE \${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
-set(CPACK_RESOURCE_FILE_README \${CMAKE_CURRENT_SOURCE_DIR}/README.md)
+RUN cmake -H. -B_build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=_install
+RUN cmake --build _build
+RUN cmake --build _build --target install
 EOF
 ```
 
 ```sh
-$ cat >> CPackConfig.cmake <<EOF
+$ cat >> Dockerfile <<EOF
 
-set(CPACK_RPM_PACKAGE_NAME "print-devel")
-set(CPACK_RPM_PACKAGE_LICENSE "MIT")
-set(CPACK_RPM_PACKAGE_GROUP "print")
-set(CPACK_RPM_CHANGELOG_FILE \${CMAKE_CURRENT_SOURCE_DIR}/ChangeLog.md)
-set(CPACK_RPM_PACKAGE_RELEASE 1)
+ENV LOG_PATH /home/logs/log.txt
 EOF
 ```
 
 ```sh
-$ cat >> CPackConfig.cmake <<EOF
+$ cat >> Dockerfile <<EOF
 
-set(CPACK_DEBIAN_PACKAGE_NAME "libprint-dev")
-set(CPACK_DEBIAN_PACKAGE_PREDEPENDS "cmake >= 3.0")
-set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
+VOLUME /home/logs
 EOF
 ```
 
 ```sh
-$ cat >> CPackConfig.cmake <<EOF
+$ cat >> Dockerfile <<EOF
 
-include(CPack)
+WORKDIR _install/bin
 EOF
 ```
 
 ```sh
-$ cat >> CMakeLists.txt <<EOF
+$ cat >> Dockerfile <<EOF
 
-include(CPackConfig.cmake)
+ENTRYPOINT ./demo
 EOF
 ```
 
 ```sh
-$ gsed -i 's/lab05/lab06/g' README.md
+$ docker build -t logger .
 ```
 
 ```sh
-$ git add .
-$ git commit -m"added cpack config"
-$ git tag v0.1.0.0
-$ git push origin master --tags
+$ docker images
+```
+
+```sh
+$ mkdir logs
+$ docker run -it -v "$(pwd)/logs/:/home/logs/" logger
+text1
+text2
+text3
+<C-D>
+```
+
+```sh
+$ docker inspect logger
+```
+
+```sh
+$ cat logs/log.txt
+```
+
+```sh
+$ gsed -i 's/lab07/lab08/g' README.md
+```
+
+```sh
+$ vim .travis.yml
+/lang<CR>o
+services:
+- docker<ESC>
+jVGdo
+script:
+- docker build -t logger .<ESC>
+:wq
+```
+
+```sh
+$ git add Dockerfile
+$ git add .travis.yml
+$ git commit -m"adding Dockerfile"
+$ git push origin master
 ```
 
 ```sh
@@ -145,30 +144,11 @@ $ travis login --auto
 $ travis enable
 ```
 
-```sh
-$ cmake -H. -B_build
-$ cmake --build _build
-$ cd _build
-$ cpack -G "TGZ"
-$ cd ..
-```
-
-```sh
-$ cmake -H. -B_build -DCPACK_GENERATOR="TGZ"
-$ cmake --build _build --target package
-```
-
-```sh
-$ mkdir artifacts
-$ mv _build/*.tar.gz artifacts
-$ tree artifacts
-```
-
 ## Report
 
 ```sh
 $ popd
-$ export LAB_NUMBER=06
+$ export LAB_NUMBER=08
 $ git clone https://github.com/tp-labs/lab${LAB_NUMBER} tasks/lab${LAB_NUMBER}
 $ mkdir reports/lab${LAB_NUMBER}
 $ cp tasks/lab${LAB_NUMBER}/README.md reports/lab${LAB_NUMBER}/REPORT.md
@@ -177,59 +157,10 @@ $ edit REPORT.md
 $ gist REPORT.md
 ```
 
-## Homework
-
-После того, как вы настроили взаимодействие с системой непрерывной интеграции,</br>
-обеспечив автоматическую сборку и тестирование ваших изменений, стоит задуматься</br>
-о создание пакетов для измениний, которые помечаются тэгами (см. вкладку [releases](https://github.com/tp-labs/lab06/releases)).</br>
-Пакет должен содержать приложение _solver_ из [предыдущего задания](https://github.com/tp-labs/lab03#задание-1)
-Таким образом, каждый новый релиз будет состоять из следующих компонентов:
-- архивы с файлами исходного кода (`.tar.gz`, `.zip`)
-- пакеты с бинарным файлом _solver_ (`.deb`, `.rpm`, `.msi`, `.dmg`)
-
-В качестве подсказки:
-```sh
-$ cat .travis.yml
-os: osx
-script:
-...
-- cpack -G DragNDrop # dmg
-
-$ cat .travis.yml
-os: linux
-script:
-...
-- cpack -G DEB # deb
-
-$ cat .travis.yml
-os: linux
-addons:
-  apt:
-    packages:
-    - rpm
-script:
-...
-- cpack -G RPM # rpm
-
-$ cat appveyor.yml
-platform:
-- x86
-- x64
-build_script:
-...
-- cpack -G WIX # msi
-```
-
-Для этого нужно добавить ветвление в конфигурационные файлы для **CI** со следующей логикой:</br>
-если **commit** помечен тэгом, то необходимо собрать пакеты (`DEB, RPM, WIX, DragNDrop, ...`) </br>
-и разместить их на сервисе **GitHub**. (см. пример для [Travi CI](https://docs.travis-ci.com/user/deployment/releases))</br>
-
 ## Links
 
-- [DMG](https://cmake.org/cmake/help/latest/module/CPackDMG.html)
-- [DEB](https://cmake.org/cmake/help/latest/module/CPackDeb.html)
-- [RPM](https://cmake.org/cmake/help/latest/module/CPackRPM.html)
-- [NSIS](https://cmake.org/cmake/help/latest/module/CPackNSIS.html)
+- [Book](https://www.dockerbook.com)
+- [Instructions](https://docs.docker.com/engine/reference/builder/)
 
 ```
 Copyright (c) 2015-2021 The ISC Authors
@@ -237,259 +168,276 @@ Copyright (c) 2015-2021 The ISC Authors
 
 ## Homework
 
-Копируем файлы из ЛР3, кроме `hello_world_application`
+### include - написанная библотека
 
-И создаем для них `CMakeLists.txt`:
-
-##### `formatter_lib`
-
-Содержимое файла `CMakeLists.txt`:
+Содержимое файла `print.hpp`:
 
 ```
-cmake_minimum_required(VERSION 3.4)
+#include <fstream>
+#include <iostream>
+#include <string>
 
-project(formatter_lib)
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-add_library(formatter_lib STATIC ${CMAKE_CURRENT_SOURCE_DIR}/formatter.cpp ${CMAKE_CURRENT_SOURCE_DIR}/formatter.h)
+void print(const std::string& text, std::ofstream& out);
+void print(const std::string& text, std::ostream& out = std::cout);
 ```
 
-##### `formatter_ex_lib`
-
-Новое содержимое файла `formatter_ex.cpp`:
+### source - исходный код
 
 ```
-#include "formatter.h"
+#include <print.hpp>
 
-std::ostream& formatter(std::ostream& out, const std::string& message)
+void print(const std::string& text, std::ostream& out)
 {
-    return out << formatter(message);
+  out << text;
+}
+
+void print(const std::string& text, std::ofstream& out)
+{
+  out << text;
 }
 ```
 
-Содержимое файла `CMakeLists.txt`:
+### logs - папка с текстовым файлом
+
+Содержимое файла `log.txt`:
 
 ```
-cmake_minimum_required(VERSION 3.4)
-
-project(formatter_ex_lib)
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../formatter_lib formatter_lib_dir)
-
-add_library(formatter_ex_lib STATIC ${CMAKE_CURRENT_SOURCE_DIR}/formatter_ex.cpp)
-
-target_include_directories(formatter_ex_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../formatter_lib )
-
-target_link_libraries(formatter_ex_lib formatter_lib)
+hello world!
 ```
 
-##### `solver_lib`
-
-Меняем ошибку в файле `solver.cpp`:
-
-```
-#include "solver.h"
-
-#include <stdexcept>
-#include <math.h>
-
-void solve(float a, float b, float c, float& x1, float& x2)
-{
-    float d = (b * b) - (4 * a * c);
-
-    if (d < 0)
-    {
-        throw std::logic_error{"error: discriminant < 0"};
-    }
-
-    x1 = (-b - std::sqrt(d)) / (2 * a);
-    x2 = (-b + std::sqrt(d)) / (2 * a);
-}
-```
-
-##### `solver_application`
+### CMakeLists
 
 Содержимое файла `CMakeLists.txt`:
 
 ```
 cmake_minimum_required(VERSION 3.4)
 
-project(solver)
-
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_subdirectory(/../formatter_ex_lib formatter_ex_lib_dir)
+#  Создаем опцию BUILD_EXAMPLES, которая отвечает за сборку примеров
+option(BUILD_EXAMPLES "Build examples" OFF)
 
-add_library(solver_lib /../solver_lib/solver.cpp /../solver_lib/solver.h)
-add_executable(solver /equation.cpp)
+project(print)
 
-target_include_directories(formatter_ex_lib PUBLIC /../formatter_lib /../formatter_ex_lib /../solver_lib)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_library(print STATIC ${CMAKE_CURRENT_SOURCE_DIR}/source/print.cpp)
 
-target_link_libraries(solver formatter_ex_lib formatter_lib solver_lib)
-```
+# Создаем исполняемый файл demo
+add_executable(demo ${CMAKE_CURRENT_SOURCE_DIR}/demo/main.cpp)
+target_link_libraries(demo print) 
+# Устанавливаем исполняемый файл demo в директорию bin
+install(TARGETS demo RUNTIME DESTINATION bin)
 
-```
-$ git add .
-$ git add solver_application
-$ git commit -m "add lib"
-$ git push origin master
-```
-`Вводим логин и токен`
-
-##### "Общий" `CMakeLists.txt`
-
-Содержимое файла `CMakeLists.txt`:
-
-```
-cmake_minimum_required(VERSION 3.4)
-
-project(solver)
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/formatter_ex_lib formatter_ex_lib_dir)
-
-add_library(solver_lib ${CMAKE_CURRENT_SOURCE_DIR}/solver_lib/solver.cpp)
-add_executable(solver ${CMAKE_CURRENT_SOURCE_DIR}/solver_application/equation.cpp)
-
-target_include_directories(formatter_ex_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/formatter_lib ${CMAKE_CURRENT_SOURCE_DIR}/formatter_ex_lib ${CMAKE_CURRENT_SOURCE_DIR}/solver_lib)
-
-target_link_libraries(solver formatter_ex_lib formatter_lib solver_lib)
-
-install(TARGETS solver
-    RUNTIME DESTINATION bin
+# Добавляем директорию include из проекта print в список директорий для поиска заголовочных файлов при использовании библиотеки print
+target_include_directories(print PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 
-#Передает управление средству пакетирования
-include(CPackConfig.cmake)
-```
-```
-$ git add CMakeLists.txt 
-$ git commit -m "CMakeLists.txt for all libs"
-$ git push origin master
-```
+# Если опция BUILD_EXAMPLES включена, то
+if(BUILD_EXAMPLES)
+  # Создается переменная EXAMPLE_SOURCES, которая содержит список всех файлов с расширением .cpp в директории examples
+  file(GLOB EXAMPLE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/examples/*.cpp")
+  # Запускается цикл по всем файлам из списка EXAMPLE_SOURCES
+  foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
+    # Для каждого файла создается переменная EXAMPLE_NAME, которая содержит название файла без расширения
+    get_filename_component(EXAMPLE_NAME ${EXAMPLE_SOURCE} NAME_WE)
+    # Создается исполняемый файл с названием EXAMPLE_NAME и исходным файлом EXAMPLE_SOURCE
+    add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE})
+    # Исполняемый файл связывается с библиотекой print
+    target_link_libraries(${EXAMPLE_NAME} print)
+    # Исполняемый файл устанавливается в директорию bin
+    install(TARGETS ${EXAMPLE_NAME}
+      RUNTIME DESTINATION bin
+    )
+  endforeach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
+endif()
 
-Содержимое файла `CMakeLists.txt` - средства пакетирования:
+# Устанавливаем библиотеку print в директорию lib и экспортируем ее в файл print-config
+install(TARGETS print
+    EXPORT print-config
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+)
 
-```
-include(InstallRequiredSystemLibraries)
-
-set(CPACK_PACKAGE_CONTACT mkkazakova@yandex.ru)
-set(CPACK_PACKAGE_VERSION ${PRINT_VERSION})
-set(CPACK_PACKAGE_DESCRIPTION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/DESCRIPTION)
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "C++ app for solving quadratic equations")
-set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
-set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
-
-set(CPACK_SOURCE_IGNORE_FILES  "\\\\.cmake;/build/;/.git/;/.github/")
-
-set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR}; /")
-
-set(CPACK_SOURCE_GENERATOR "TGZ;ZIP")
-
-set(CPACK_DEBIAN_PACKAGE_NAME "solverapp-dev")
-set(CPACK_DEBIAN_FILE_NAME "solver-${PRINT_VERSION}.deb")
-set(CPACK_DEBIAN_PACKAGE_VERSION ${PRINT_VERSION})
-set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "all")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "mkkazakova")
-set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
-
-set(CPACK_GENERATOR "DEB")
-
-include(CPack)
-```
-```
-$ git add CPackConfig.cmake 
-$ git commit -m "CPackConfig"
-$ git push origin master
+# Устанавливаем все заголовочные файлы из директории include в директорию include
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION include)
+# Экспортируем файл print-config в директорию cmake
+install(EXPORT print-config DESTINATION cmake)
 ```
 
-Создаём сценарий и отдельный сценарий для пакетирования:
+### Dockerfile
+
+```
+FROM ubuntu:20.04
+
+RUN apt update
+RUN apt install -yy gcc g++ cmake
+
+COPY . print/
+WORKDIR print
+
+RUN cmake -H. -B_build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=_install
+RUN cmake --build _build
+RUN cmake --build _build --target install
+
+ENV LOG_PATH /home/lab08/logs/log.txt
+VOLUME /home/lab08/logs
+
+WORKDIR _install/bin
+ENTRYPOINT ./demo
+```
+
+### Action.yml - файл сценария
 
 Содержимое `Action.yml`:
 
 ```
-name: CMake
-
+name: docker
 on:
- push:
-  branches: [master]
- pull_request:
-  branches: [master]
-
-jobs: 
- build_Linux:
-
-  runs-on: ubuntu-latest
-
-  steps:
-  - uses: actions/checkout@v3
-
-  - name: Configure Solver
-    run: cmake ${{github.workspace}} -B ${{github.workspace}}/build
-
-  - name: Build Solver
-    run: cmake --build ${{github.workspace}}/build
-```
-```
-$ git add Action.yml
-$ git commit -m "Action.yml and Release.yml"
-$ git push origin master
-```
-
-Содержимое `Release.yml`:
-
-```
-name: CMake
-
-on:
- push:
-   tags:
-     - v**
-
-permissions:
-  contents: write
-
-jobs: 
-
-  build_packages_Linux:
-
+  push:
+jobs:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Configure Solver
-      run: cmake ${{github.workspace}} -B ${{github.workspace}}/build -D PRINT_VERSION=${GITHUB_REF_NAME#v}
+      - name: build docker
+        run: docker build -t logger .
+```
 
-    - name: Build Solver
-      run: cmake --build ${{github.workspace}}/build
+Затем запускает контейнер `Docker` с образом "hello-world". Этот образ используется для проверки, что Docker установлен и работает корректно.
 
-    - name: Build package
-      run: cmake --build ${{github.workspace}}/build --target package
-
-    - name: Build source package
-      run: cmake --build ${{github.workspace}}/build --target package_source
-
-    - name: Make a release
-      uses: ncipollo/release-action@v1.10.0
-      with:
-        artifacts: "build/*.deb,build/*.tar.gz,build/*.zip"
-        replacesArtifacts: false
-        GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        allowUpdates: true
+```
+$ sudo apt install docker.io
+$ sudo docker run hello-world
 ```
 ```
-$ git add Release.yml
-$ git commit -m "Action.yml and Release.yml"
-$ git push origin master
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+    (amd64)
+ 3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+
+To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash
+
+Share images, automate workflows, and more with a free Docker ID:
+ https://hub.docker.com/
+
+For more examples and ideas, visit:
+ https://docs.docker.com/get-started/
 ```
-`Вводим логин и токен`
+
+Создаём Docker-образ с любым именнем, в нашем случае с именем "logger" на основе `Dockerfile`, который находится в текущей директории (главной)
+Смотрим список всех доступных Docker-образов (у нас доступен 1, который мы сделали)
+
+Запускаем контейнер на основе образа "logger"
+```
+$ sudo docker build -t logger .
+$ sudo docker images
+$ sudo docker run -it -v "$(pwd)/logs/:/home/lab08/logs/" logger
+```
+```
+Sending build context to Docker daemon  93.18kB
+Step 1/12 : FROM ubuntu:20.04
+ ---> 88bd68917189
+Step 2/12 : RUN apt update
+ ---> Using cache
+ ---> edc856519bb9
+Step 3/12 : RUN apt install -yy gcc g++ cmake
+ ---> Using cache
+ ---> a0c4f4b1b79a
+Step 4/12 : COPY . print/
+ ---> d425625e27d8
+Step 5/12 : WORKDIR print
+ ---> Running in 172ea7276db9
+Removing intermediate container 172ea7276db9
+ ---> b110a72a2120
+Step 6/12 : RUN cmake -H. -B_build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=_install
+ ---> Running in da69e0cc801d
+-- The C compiler identification is GNU 9.4.0
+-- The CXX compiler identification is GNU 9.4.0
+-- Check for working C compiler: /usr/bin/cc
+-- Check for working C compiler: /usr/bin/cc -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/c++
+-- Check for working CXX compiler: /usr/bin/c++ -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /print/_build
+Removing intermediate container da69e0cc801d
+ ---> 10530e033ccf
+Step 7/12 : RUN cmake --build _build
+ ---> Running in e84fdbf71a33
+Scanning dependencies of target print
+[ 25%] Building CXX object CMakeFiles/print.dir/source/print.cpp.o
+[ 50%] Linking CXX static library libprint.a
+[ 50%] Built target print
+Scanning dependencies of target demo
+[ 75%] Building CXX object CMakeFiles/demo.dir/demo/main.cpp.o
+[100%] Linking CXX executable demo
+[100%] Built target demo
+Removing intermediate container e84fdbf71a33
+ ---> dfeb06362aaf
+Step 8/12 : RUN cmake --build _build --target install
+ ---> Running in c78816a017ad
+[ 50%] Built target print
+[100%] Built target demo
+Install the project...
+-- Install configuration: "Release"
+-- Installing: /print/_install/bin/demo
+-- Installing: /print/_install/lib/libprint.a
+-- Installing: /print/_install/include
+-- Installing: /print/_install/include/print.hpp
+-- Installing: /print/_install/cmake/print-config.cmake
+-- Installing: /print/_install/cmake/print-config-release.cmake
+Removing intermediate container c78816a017ad
+ ---> 236fbd5706da
+Step 9/12 : ENV LOG_PATH /home/lab08/logs/log.txt
+ ---> Running in 70953b79a6a5
+Removing intermediate container 70953b79a6a5
+ ---> 34e0ae76c7a0
+Step 10/12 : VOLUME /home/lab08/logs
+ ---> Running in 096bf6bf0f33
+Removing intermediate container 096bf6bf0f33
+ ---> 048737c173c4
+Step 11/12 : WORKDIR _install/bin
+ ---> Running in 7a6946a8f92b
+Removing intermediate container 7a6946a8f92b
+ ---> 5d6bd88411e1
+Step 12/12 : ENTRYPOINT ./demo
+ ---> Running in 7c4f96077bb2
+Removing intermediate container 7c4f96077bb2
+ ---> 7983cec6dd3a
+Successfully built 7983cec6dd3a
+Successfully tagged logger:latest
+```
+```
+REPOSITORY      TAG       IMAGE ID       CREATED         SIZE
+logger          latest    7983cec6dd3a   3 minutes ago   388MB
+```
+Последня команда требует ввести текст, который запишется в наш `log.txt` (она ничего не выводит)
+
+```
+$ sudo docker inspect logger
+$ cat logs/log.txt
+```
+```
+sokol
+
+```
