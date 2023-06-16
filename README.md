@@ -1,16 +1,14 @@
-## Laboratory work V
+## Laboratory work VI
 
-[![Coverage Status](https://coveralls.io/repos/github/DimaSokkk/lab05/badge.svg?branch=master)](https://coveralls.io/github/DimaSokkk/lab05?branch=master)
-
-Данная лабораторная работа посвещена изучению фреймворков для тестирования на примере **GTest**
+Данная лабораторная работа посвещена изучению средств пакетирования на примере **CPack**
 
 ```sh
-$ open https://github.com/google/googletest
+$ open https://cmake.org/Wiki/CMake:CPackPackageGenerators
 ```
 
 ## Tasks
 
-- [ ] 1. Создать публичный репозиторий с названием **lab05** на сервисе **GitHub**
+- [ ] 1. Создать публичный репозиторий с названием **lab06** на сервисе **GitHub**
 - [ ] 2. Выполнить инструкцию учебного материала
 - [ ] 3. Ознакомиться со ссылками учебного материала
 - [ ] 4. Составить отчет и отправить ссылку личным сообщением в **Slack**
@@ -19,6 +17,8 @@ $ open https://github.com/google/googletest
 
 ```sh
 $ export GITHUB_USERNAME=<имя_пользователя>
+$ export GITHUB_EMAIL=<адрес_почтового_ящика>
+$ alias edit=<nano|vi|vim|subl>
 $ alias gsed=sed # for *-nix system
 ```
 
@@ -29,91 +29,115 @@ $ source scripts/activate
 ```
 
 ```sh
-$ git clone https://github.com/${GITHUB_USERNAME}/lab04 projects/lab05
-$ cd projects/lab05
+$ git clone https://github.com/${GITHUB_USERNAME}/lab05 projects/lab06
+$ cd projects/lab06
 $ git remote remove origin
-$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab05
+$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab06
 ```
 
 ```sh
-$ mkdir third-party
-$ git submodule add https://github.com/google/googletest third-party/gtest
-$ cd third-party/gtest && git checkout release-1.8.1 && cd ../..
-$ git add third-party/gtest
-$ git commit -m"added gtest framework"
-```
-
-```sh
-$ gsed -i '/option(BUILD_EXAMPLES "Build examples" OFF)/a\
-option(BUILD_TESTS "Build tests" OFF)
+$ gsed -i '/project(print)/a\
+set(PRINT_VERSION_STRING "v\${PRINT_VERSION}")
 ' CMakeLists.txt
+$ gsed -i '/project(print)/a\
+set(PRINT_VERSION\
+  \${PRINT_VERSION_MAJOR}.\${PRINT_VERSION_MINOR}.\${PRINT_VERSION_PATCH}.\${PRINT_VERSION_TWEAK})
+' CMakeLists.txt
+$ gsed -i '/project(print)/a\
+set(PRINT_VERSION_TWEAK 0)
+' CMakeLists.txt
+$ gsed -i '/project(print)/a\
+set(PRINT_VERSION_PATCH 0)
+' CMakeLists.txt
+$ gsed -i '/project(print)/a\
+set(PRINT_VERSION_MINOR 1)
+' CMakeLists.txt
+$ gsed -i '/project(print)/a\
+set(PRINT_VERSION_MAJOR 0)
+' CMakeLists.txt
+$ git diff
+```
+
+```sh
+$ touch DESCRIPTION && edit DESCRIPTION
+$ touch ChangeLog.md
+$ export DATE="`LANG=en_US date +'%a %b %d %Y'`"
+$ cat > ChangeLog.md <<EOF
+* ${DATE} ${GITHUB_USERNAME} <${GITHUB_EMAIL}> 0.1.0.0
+- Initial RPM release
+EOF
+```
+
+```sh
+$ cat > CPackConfig.cmake <<EOF
+include(InstallRequiredSystemLibraries)
+EOF
+```
+
+```sh
+$ cat >> CPackConfig.cmake <<EOF
+set(CPACK_PACKAGE_CONTACT ${GITHUB_EMAIL})
+set(CPACK_PACKAGE_VERSION_MAJOR \${PRINT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR \${PRINT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH \${PRINT_VERSION_PATCH})
+set(CPACK_PACKAGE_VERSION_TWEAK \${PRINT_VERSION_TWEAK})
+set(CPACK_PACKAGE_VERSION \${PRINT_VERSION})
+set(CPACK_PACKAGE_DESCRIPTION_FILE \${CMAKE_CURRENT_SOURCE_DIR}/DESCRIPTION)
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "static C++ library for printing")
+EOF
+```
+
+```sh
+$ cat >> CPackConfig.cmake <<EOF
+
+set(CPACK_RESOURCE_FILE_LICENSE \${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
+set(CPACK_RESOURCE_FILE_README \${CMAKE_CURRENT_SOURCE_DIR}/README.md)
+EOF
+```
+
+```sh
+$ cat >> CPackConfig.cmake <<EOF
+
+set(CPACK_RPM_PACKAGE_NAME "print-devel")
+set(CPACK_RPM_PACKAGE_LICENSE "MIT")
+set(CPACK_RPM_PACKAGE_GROUP "print")
+set(CPACK_RPM_CHANGELOG_FILE \${CMAKE_CURRENT_SOURCE_DIR}/ChangeLog.md)
+set(CPACK_RPM_PACKAGE_RELEASE 1)
+EOF
+```
+
+```sh
+$ cat >> CPackConfig.cmake <<EOF
+
+set(CPACK_DEBIAN_PACKAGE_NAME "libprint-dev")
+set(CPACK_DEBIAN_PACKAGE_PREDEPENDS "cmake >= 3.0")
+set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
+EOF
+```
+
+```sh
+$ cat >> CPackConfig.cmake <<EOF
+
+include(CPack)
+EOF
+```
+
+```sh
 $ cat >> CMakeLists.txt <<EOF
 
-if(BUILD_TESTS)
-  enable_testing()
-  add_subdirectory(third-party/gtest)
-  file(GLOB \${PROJECT_NAME}_TEST_SOURCES tests/*.cpp)
-  add_executable(check \${\${PROJECT_NAME}_TEST_SOURCES})
-  target_link_libraries(check \${PROJECT_NAME} gtest_main)
-  add_test(NAME check COMMAND check)
-endif()
+include(CPackConfig.cmake)
 EOF
 ```
 
 ```sh
-$ mkdir tests
-$ cat > tests/test1.cpp <<EOF
-#include <print.hpp>
-
-#include <gtest/gtest.h>
-
-TEST(Print, InFileStream)
-{
-  std::string filepath = "file.txt";
-  std::string text = "hello";
-  std::ofstream out{filepath};
-
-  print(text, out);
-  out.close();
-
-  std::string result;
-  std::ifstream in{filepath};
-  in >> result;
-
-  EXPECT_EQ(result, text);
-}
-EOF
+$ gsed -i 's/lab05/lab06/g' README.md
 ```
 
 ```sh
-$ cmake -H. -B_build -DBUILD_TESTS=ON
-$ cmake --build _build
-$ cmake --build _build --target test
-```
-
-```sh
-$ _build/check
-$ cmake --build _build --target test -- ARGS=--verbose
-```
-
-```sh
-$ gsed -i 's/lab04/lab05/g' README.md
-$ gsed -i 's/\(DCMAKE_INSTALL_PREFIX=_install\)/\1 -DBUILD_TESTS=ON/' .travis.yml
-$ gsed -i '/cmake --build _build --target install/a\
-- cmake --build _build --target test -- ARGS=--verbose
-' .travis.yml
-```
-
-```sh
-$ travis lint
-```
-
-```sh
-$ git add .travis.yml
-$ git add tests
-$ git add -p
-$ git commit -m"added tests"
-$ git push origin master
+$ git add .
+$ git commit -m"added cpack config"
+$ git tag v0.1.0.0
+$ git push origin master --tags
 ```
 
 ```sh
@@ -122,17 +146,29 @@ $ travis enable
 ```
 
 ```sh
+$ cmake -H. -B_build
+$ cmake --build _build
+$ cd _build
+$ cpack -G "TGZ"
+$ cd ..
+```
+
+```sh
+$ cmake -H. -B_build -DCPACK_GENERATOR="TGZ"
+$ cmake --build _build --target package
+```
+
+```sh
 $ mkdir artifacts
-$ sleep 20s && gnome-screenshot --file artifacts/screenshot.png
-# for macOS: $ screencapture -T 20 artifacts/screenshot.png
-# open https://github.com/${GITHUB_USERNAME}/lab05
+$ mv _build/*.tar.gz artifacts
+$ tree artifacts
 ```
 
 ## Report
 
 ```sh
 $ popd
-$ export LAB_NUMBER=05
+$ export LAB_NUMBER=06
 $ git clone https://github.com/tp-labs/lab${LAB_NUMBER} tasks/lab${LAB_NUMBER}
 $ mkdir reports/lab${LAB_NUMBER}
 $ cp tasks/lab${LAB_NUMBER}/README.md reports/lab${LAB_NUMBER}/REPORT.md
@@ -143,19 +179,57 @@ $ gist REPORT.md
 
 ## Homework
 
-### Задание
-1. Создайте `CMakeList.txt` для библиотеки *banking*.
-2. Создайте модульные тесты на классы `Transaction` и `Account`.
-    * Используйте mock-объекты.
-    * Покрытие кода должно составлять 100%.
-3. Настройте сборочную процедуру на **TravisCI**.
-4. Настройте [Coveralls.io](https://coveralls.io/).
+После того, как вы настроили взаимодействие с системой непрерывной интеграции,</br>
+обеспечив автоматическую сборку и тестирование ваших изменений, стоит задуматься</br>
+о создание пакетов для измениний, которые помечаются тэгами (см. вкладку [releases](https://github.com/tp-labs/lab06/releases)).</br>
+Пакет должен содержать приложение _solver_ из [предыдущего задания](https://github.com/tp-labs/lab03#задание-1)
+Таким образом, каждый новый релиз будет состоять из следующих компонентов:
+- архивы с файлами исходного кода (`.tar.gz`, `.zip`)
+- пакеты с бинарным файлом _solver_ (`.deb`, `.rpm`, `.msi`, `.dmg`)
+
+В качестве подсказки:
+```sh
+$ cat .travis.yml
+os: osx
+script:
+...
+- cpack -G DragNDrop # dmg
+
+$ cat .travis.yml
+os: linux
+script:
+...
+- cpack -G DEB # deb
+
+$ cat .travis.yml
+os: linux
+addons:
+  apt:
+    packages:
+    - rpm
+script:
+...
+- cpack -G RPM # rpm
+
+$ cat appveyor.yml
+platform:
+- x86
+- x64
+build_script:
+...
+- cpack -G WIX # msi
+```
+
+Для этого нужно добавить ветвление в конфигурационные файлы для **CI** со следующей логикой:</br>
+если **commit** помечен тэгом, то необходимо собрать пакеты (`DEB, RPM, WIX, DragNDrop, ...`) </br>
+и разместить их на сервисе **GitHub**. (см. пример для [Travi CI](https://docs.travis-ci.com/user/deployment/releases))</br>
 
 ## Links
 
-- [C++ CI: Travis, CMake, GTest, Coveralls & Appveyor](http://david-grs.github.io/cpp-clang-travis-cmake-gtest-coveralls-appveyor/)
-- [Boost.Tests](http://www.boost.org/doc/libs/1_63_0/libs/test/doc/html/)
-- [Catch](https://github.com/catchorg/Catch2)
+- [DMG](https://cmake.org/cmake/help/latest/module/CPackDMG.html)
+- [DEB](https://cmake.org/cmake/help/latest/module/CPackDeb.html)
+- [RPM](https://cmake.org/cmake/help/latest/module/CPackRPM.html)
+- [NSIS](https://cmake.org/cmake/help/latest/module/CPackNSIS.html)
 
 ```
 Copyright (c) 2015-2021 The ISC Authors
@@ -163,184 +237,184 @@ Copyright (c) 2015-2021 The ISC Authors
 
 ## Homework
 
-## Part I
+Копируем файлы из ЛР3, кроме `hello_world_application`
 
-Для начала скопируем папку banking из `tp labs`:
+И создаем для них `CMakeLists.txt`:
 
-```
-$ wget https://raw.githubusercontent.com/tp-labs/lab05/master/banking/Account.cpp
-$ wget https://raw.githubusercontent.com/tp-labs/lab05/master/banking/Account.h
-$ wget https://raw.githubusercontent.com/tp-labs/lab05/master/banking/Transaction.cpp
-$ wget https://raw.githubusercontent.com/tp-labs/lab05/master/banking/Transaction.h
-```
+##### `formatter_lib`
 
-В файле Transaction.cpp допущена ошибка - нужно изменить 34 строку: 
-
-Меняем `Debit(to, sum + fee_)` на `Debit(from, sum + fee_)`
-
-Теперь подключим библиотеку `gtest`:
-
-```
-$ mkdir third-party
-$ git submodule add https://github.com/google/googletest third-party/gtest
-$ cd third-party/gtest && git checkout release-1.8.1 && cd ../..
-$ git add third-party/gtest
-$ git commit -m "added gtest"
-$ git push origin master
-```
-
-Создадим CMakeLists.txt внутри banking:
-```
-project(banking_lib)
-
-if (NOT TARGET libbanking)
-    add_library(libbanking STATIC
-        /Account.cpp
-        /Transaction.cpp
-    )
-
-    install(TARGETS libbanking
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib
-    )
-endif(NOT TARGET libbanking)
-
-include_directories()
-```
-
-Создадим "общий" CMakeLists.txt:
+Содержимое файла `CMakeLists.txt`:
 
 ```
 cmake_minimum_required(VERSION 3.4)
 
+project(formatter_lib)
+
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(BUILD_TEST "Build tests" OFF)
-
-if(BUILD_TESTS)
-  add_compile_options(--coverage)
-endif()
-
-option(COVERAGE "Check coverage" ON)
-
-project(banking)
-
-add_library(banking STATIC banking/Account.cpp banking/Transaction.cpp)
-target_include_directories(banking PUBLIC banking/)
-
-target_link_libraries(banking gcov)
-
-if(BUILD_TESTS)
-  enable_testing()
-  add_subdirectory(third-party/gtest)
-  file(GLOB BANKING_TEST_SOURCES tests/test1.cpp)
-  add_executable(check tests/test1.cpp)
-  target_link_libraries(check banking gtest_main gmock_main)
-  add_test(NAME check COMMAND check)
-endif()
-
-if (COVERAGE)
-	target_compile_options(check PRIVATE --coverage)
-	target_link_libraries(check --coverage)
-endif()
+add_library(formatter_lib STATIC ${CMAKE_CURRENT_SOURCE_DIR}/formatter.cpp ${CMAKE_CURRENT_SOURCE_DIR}/formatter.h)
 ```
 
-## Part II
+##### `formatter_ex_lib`
 
-Создаём тест внутри папки tests:
-
-Содержимое файла test1:
+Новое содержимое файла `formatter_ex.cpp`:
 
 ```
-#include "Account.h"
-#include "Transaction.h"
+#include "formatter.h"
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
-
-class AccountMock : public Account {
-public:
-    AccountMock(int id, int balance) : Account(id, balance) {}
-    MOCK_CONST_METHOD0(GetBalance, int());
-    MOCK_METHOD1(ChangeBalance, void(int diff)); 
-    MOCK_METHOD0(Lock, void());
-    MOCK_METHOD0(Unlock, void());
-};
-
-class TransactionMock : public Transaction {
-public:
-    MOCK_METHOD3(Make, bool(Account& from, Account& to, int sum));
-};
-
-TEST(Account, Mock) {
-    AccountMock acc(1, 666);
-    EXPECT_CALL(acc, GetBalance()).Times(1);
-    EXPECT_CALL(acc, ChangeBalance(testing::_)).Times(2);
-    EXPECT_CALL(acc, Lock()).Times(2);
-    EXPECT_CALL(acc, Unlock()).Times(1);
-    acc.GetBalance();
-    acc.ChangeBalance(100); 
-    acc.Lock();
-    acc.ChangeBalance(100);
-    acc.Lock(); 
-    acc.Unlock();
-}
-
-TEST(Account, SimpleTest) {
-    Account acc(1, 666);
-    EXPECT_EQ(acc.id(), 1);
-    EXPECT_EQ(acc.GetBalance(), 666);
-    EXPECT_THROW(acc.ChangeBalance(200), std::runtime_error);
-    EXPECT_NO_THROW(acc.Lock());
-    acc.ChangeBalance(200);
-    EXPECT_EQ(acc.GetBalance(), 866);
-    EXPECT_THROW(acc.Lock(), std::runtime_error);
-    EXPECT_NO_THROW(acc.Unlock());
-}
-
-TEST(Transaction, Mock) {
-    TransactionMock tr;
-    Account ac1(1, 100);
-    Account ac2(2, 300);
-    EXPECT_CALL(tr, Make(testing::_, testing::_, testing::_))
-    .Times(5);
-    tr.set_fee(200);
-    tr.Make(ac1, ac2, 200);
-    tr.Make(ac2, ac1, 300);
-    tr.Make(ac1, ac1, 0); 
-    tr.Make(ac1, ac2, -5); 
-    tr.Make(ac2, ac1, 50); 
-}
-
-TEST(Transaction, SimpleTest) {
-    Transaction tr;
-    Account ac1(1, 100);
-    Account ac2(2, 300);
-    tr.set_fee(10);
-    EXPECT_EQ(tr.fee(), 10);
-    EXPECT_THROW(tr.Make(ac1, ac2, 40), std::logic_error);
-    EXPECT_THROW(tr.Make(ac1, ac2, -5), std::invalid_argument);
-    EXPECT_THROW(tr.Make(ac1, ac1, 100), std::logic_error);
-    EXPECT_FALSE(tr.Make(ac1, ac2, 400));
-    EXPECT_FALSE(tr.Make(ac2, ac1, 300));
-    EXPECT_FALSE(tr.Make(ac2, ac1, 290));
-    EXPECT_TRUE(tr.Make(ac2, ac1, 150));
+std::ostream& formatter(std::ostream& out, const std::string& message)
+{
+    return out << formatter(message);
 }
 ```
 
-## Part III
+Содержимое файла `CMakeLists.txt`:
 
-Создаём lcov.info в папке coverage
 ```
-$ mkdir coverage
-$ cd coverage
-$ cat >> lcov.info << EOF
+cmake_minimum_required(VERSION 3.4)
+
+project(formatter_ex_lib)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../formatter_lib formatter_lib_dir)
+
+add_library(formatter_ex_lib STATIC ${CMAKE_CURRENT_SOURCE_DIR}/formatter_ex.cpp)
+
+target_include_directories(formatter_ex_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../formatter_lib )
+
+target_link_libraries(formatter_ex_lib formatter_lib)
 ```
 
-`lcov` — графический интерфейс для gcov. Он собирает файлы gcov для нескольких файлов с исходниками и создает комплект HTML-страниц с кодом и сведениями о покрытии. 
+##### `solver_lib`
 
-Создадим файл Action.yml:
+Меняем ошибку в файле `solver.cpp`:
+
+```
+#include "solver.h"
+
+#include <stdexcept>
+#include <math.h>
+
+void solve(float a, float b, float c, float& x1, float& x2)
+{
+    float d = (b * b) - (4 * a * c);
+
+    if (d < 0)
+    {
+        throw std::logic_error{"error: discriminant < 0"};
+    }
+
+    x1 = (-b - std::sqrt(d)) / (2 * a);
+    x2 = (-b + std::sqrt(d)) / (2 * a);
+}
+```
+
+##### `solver_application`
+
+Содержимое файла `CMakeLists.txt`:
+
+```
+cmake_minimum_required(VERSION 3.4)
+
+project(solver)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_subdirectory(/../formatter_ex_lib formatter_ex_lib_dir)
+
+add_library(solver_lib /../solver_lib/solver.cpp /../solver_lib/solver.h)
+add_executable(solver /equation.cpp)
+
+target_include_directories(formatter_ex_lib PUBLIC /../formatter_lib /../formatter_ex_lib /../solver_lib)
+
+target_link_libraries(solver formatter_ex_lib formatter_lib solver_lib)
+```
+
+```
+$ git add .
+$ git add solver_application
+$ git commit -m "add lib"
+$ git push origin master
+```
+`Вводим логин и токен`
+
+##### "Общий" `CMakeLists.txt`
+
+Содержимое файла `CMakeLists.txt`:
+
+```
+cmake_minimum_required(VERSION 3.4)
+
+project(solver)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/formatter_ex_lib formatter_ex_lib_dir)
+
+add_library(solver_lib ${CMAKE_CURRENT_SOURCE_DIR}/solver_lib/solver.cpp)
+add_executable(solver ${CMAKE_CURRENT_SOURCE_DIR}/solver_application/equation.cpp)
+
+target_include_directories(formatter_ex_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/formatter_lib ${CMAKE_CURRENT_SOURCE_DIR}/formatter_ex_lib ${CMAKE_CURRENT_SOURCE_DIR}/solver_lib)
+
+target_link_libraries(solver formatter_ex_lib formatter_lib solver_lib)
+
+install(TARGETS solver
+    RUNTIME DESTINATION bin
+)
+
+#Передает управление средству пакетирования
+include(CPackConfig.cmake)
+```
+```
+$ git add CMakeLists.txt 
+$ git commit -m "CMakeLists.txt for all libs"
+$ git push origin master
+```
+
+Содержимое файла `CMakeLists.txt` - средства пакетирования:
+
+```
+include(InstallRequiredSystemLibraries)
+
+set(CPACK_PACKAGE_CONTACT mkkazakova@yandex.ru)
+set(CPACK_PACKAGE_VERSION ${PRINT_VERSION})
+set(CPACK_PACKAGE_DESCRIPTION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/DESCRIPTION)
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "C++ app for solving quadratic equations")
+set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
+set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
+
+set(CPACK_SOURCE_IGNORE_FILES  "\\\\.cmake;/build/;/.git/;/.github/")
+
+set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR}; /")
+
+set(CPACK_SOURCE_GENERATOR "TGZ;ZIP")
+
+set(CPACK_DEBIAN_PACKAGE_NAME "solverapp-dev")
+set(CPACK_DEBIAN_FILE_NAME "solver-${PRINT_VERSION}.deb")
+set(CPACK_DEBIAN_PACKAGE_VERSION ${PRINT_VERSION})
+set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "all")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "mkkazakova")
+set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
+
+set(CPACK_GENERATOR "DEB")
+
+include(CPack)
+```
+```
+$ git add CPackConfig.cmake 
+$ git commit -m "CPackConfig"
+$ git push origin master
+```
+
+Создаём сценарий и отдельный сценарий для пакетирования:
+
+Содержимое `Action.yml`:
 
 ```
 name: CMake
@@ -351,7 +425,7 @@ on:
  pull_request:
   branches: [master]
 
-jobs:
+jobs: 
  build_Linux:
 
   runs-on: ubuntu-latest
@@ -359,69 +433,63 @@ jobs:
   steps:
   - uses: actions/checkout@v3
 
-  - name: Adding gtest
-    run: git clone https://github.com/google/googletest.git third-party/gtest -b release-1.11.0
+  - name: Configure Solver
+    run: cmake ${{github.workspace}} -B ${{github.workspace}}/build
 
-  - name: Install lcov
-    run: sudo apt-get install -y lcov
-
-  - name: Config banking with tests
-    run: cmake -H. -B ${{github.workspace}}/build -DBUILD_TESTS=ON
-
-  - name: Build banking
+  - name: Build Solver
     run: cmake --build ${{github.workspace}}/build
-
-  - name: Run tests
-    run: |
-      build/check
-      cmake --build ${{github.workspace}}/build --target test -- ARGS=--verbose
-
-  - name: Do lcov stuff
-    run: lcov -c -d build/CMakeFiles/banking.dir/banking/ --include *.cpp --output-file ./coverage/lcov.info
-
-  - name: Publish to coveralls.io
-    uses: coverallsapp/github-action@v1.1.2
-    with:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+```
+$ git add Action.yml
+$ git commit -m "Action.yml and Release.yml"
+$ git push origin master
 ```
 
-# Некоторые сведения об использованных командах
+Содержимое `Release.yml`:
 
-`target_include_directories` Указывает включаемые каталоги, которые будут использоваться при компиляции заданной цели banking
+```
+name: CMake
 
-`target_link_libraries` связывание banking и gcov
+on:
+ push:
+   tags:
+     - v**
 
-`GLOB` сгенерирует список всех файлов, соответствующих выражениям подстановки, и сохранит его в переменной
+permissions:
+  contents: write
 
-`add_executable` Добавляет в проект исполняемый файл, используя указанные исходные файлы
+jobs: 
 
-`add_test` Добавляет тест под названием
+  build_packages_Linux:
 
-`add_library` Добавляет целевой объект библиотеки с именем libbanking для построения из исходных файлов, перечисленных в вызове команды
+    runs-on: ubuntu-latest
 
-Библиотеки `STATIC` - это архивы объектных файлов для использования при компоновке других целей.
+    steps:
+    - uses: actions/checkout@v3
 
-`install(TARGETS` указаны правила установки целей из проекта
+    - name: Configure Solver
+      run: cmake ${{github.workspace}} -B ${{github.workspace}}/build -D PRINT_VERSION=${GITHUB_REF_NAME#v}
 
-`ARCHIVE DESTINATION lib` статическая, `LIBRARY DESTINATION lib` общие библиотеки
+    - name: Build Solver
+      run: cmake --build ${{github.workspace}}/build
 
-`MOCK_METHOD1(ChangeBalance, void(int diff))` Первым аргументом идет имя того самого метода, который мы ожидаем что будет выполнен в нашем будущем тесте. 
-Далее идет сигнатура этого метода. Цифра 1 в названии макроса означает число аргументов у метода ChangeBalance - один.
+    - name: Build package
+      run: cmake --build ${{github.workspace}}/build --target package
 
-`EXPECT_CALL` позволяет описать, что должно произойти с методом за время теста
+    - name: Build source package
+      run: cmake --build ${{github.workspace}}/build --target package_source
 
-`EXPECT_EQ` EQ - Equal, проверяет равны ли
-
-`EXPECT_THROW(tr.Make(ac1, ac1, 100), std::logic_error);` Проверяет, что tr.Make(ac1, ac1, 100) выдает исключение типа logic_error
-
-`EXPECT_NO_THROW(acc.Lock());` Проверяет, что (acc.Lock() не генерирует никаких исключений
-
-`EXPECT_FALSE` проверяет неверно ли это 
-
-`sudo apt-get install` используется для загрузки последней версии нужного вам приложения из онлайн-хранилища программного обеспечения, на которое указывают ваши источники
-
-`cmake -H. -B ${{github.workspace}}/build -DBUILD_TESTS=ON` Подготовка процесса сборки, запись результата в файл
-
-`cmake --build ${{github.workspace}}/build` Старт сборки
-
-`cmake --build ${{github.workspace}}/build --target test -- ARGS=--verbose` Начинаем сборку test, которая будет транслировать результаты теста
+    - name: Make a release
+      uses: ncipollo/release-action@v1.10.0
+      with:
+        artifacts: "build/*.deb,build/*.tar.gz,build/*.zip"
+        replacesArtifacts: false
+        GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        allowUpdates: true
+```
+```
+$ git add Release.yml
+$ git commit -m "Action.yml and Release.yml"
+$ git push origin master
+```
+`Вводим логин и токен`
